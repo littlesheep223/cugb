@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>环境污染物数据库 · CCl₄ 演示</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #008080;
+            --primary-light: #e0f2f1;
+            --primary-dark: #004d4d;
+            --bg-body: #f8f9fa;
+            --bg-surface: #ffffff;
+            --border-color: #e9ecef;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --sidebar-width: 320px;
+            --details-width: min(480px, 92vw);
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 8px rgba(0,0,0,0.08);
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        header {
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 30px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            box-shadow: var(--shadow-sm);
+            z-index: 100;
+        }
+        .brand {
+            font-weight: 700;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            color: var(--primary-color);
+        }
+        .brand i { margin-right: 12px; font-size: 1.4rem; }
+        .demo-badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: var(--bg-body);
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+        }
+        .main-layout { display: flex; flex: 1; overflow: hidden; position: relative; }
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--bg-surface);
+            border-right: 1px solid var(--border-color);
+            padding: 24px;
+            overflow-y: auto;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        .filter-title {
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        .chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+        .chip-label {
+            background: var(--bg-body);
+            color: var(--text-secondary);
+            padding: 8px 14px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+            user-select: none;
+        }
+        .chip-label:hover { background: #e2e6ea; }
+        input[type="checkbox"]:checked + .chip-label {
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            border-color: var(--primary-color);
+        }
+        input[type="checkbox"] { position: absolute; opacity: 0; pointer-events: none; }
+        .slider-group { padding: 4px 0; }
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .range-container { position: relative; height: 20px; }
+        .range-track {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            left: 0; right: 0;
+            height: 4px;
+            background: #e9ecef;
+            border-radius: 2px;
+            z-index: 1;
+        }
+        .range-highlight {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 4px;
+            background: var(--primary-color);
+            border-radius: 2px;
+            z-index: 2;
+            pointer-events: none;
+        }
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            margin: 0;
+            background: transparent;
+            pointer-events: none;
+            z-index: 3;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: var(--bg-surface);
+            border: 2px solid var(--primary-color);
+            cursor: pointer;
+            pointer-events: auto;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            margin-top: -7px;
+        }
+        input[type=range]::-moz-range-thumb {
+            height: 18px;
+            width: 18px;
+            border: 2px solid var(--primary-color);
+            border-radius: 50%;
+            background: var(--bg-surface);
+            cursor: pointer;
+            pointer-events: auto;
+        }
+        .adv-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            cursor: pointer;
+            padding: 8px 0;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+        }
+        .adv-toggle i { transition: transform 0.2s; }
+        .adv-toggle.active i { transform: rotate(180deg); }
+        .advanced-panel { display: none; flex-direction: column; gap: 12px; }
+        .advanced-panel.show { display: flex; }
+        .text-filter {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-family: inherit;
+        }
+        .text-filter:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+        .content {
+            flex: 1;
+            padding: 24px 28px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+        .content-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            flex-shrink: 0;
+        }
+        .content-header h2 { margin: 0; font-size: 1.1rem; font-weight: 700; }
+        .result-count { color: var(--text-secondary); font-size: 0.9rem; }
+        .table-wrap {
+            flex: 1;
+            overflow: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            background: var(--bg-surface);
+            box-shadow: var(--shadow-sm);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+        }
+        thead th {
+            position: sticky;
+            top: 0;
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            text-align: left;
+            padding: 12px 14px;
+            font-weight: 700;
+            border-bottom: 2px solid var(--primary-color);
+            white-space: nowrap;
+        }
+        tbody td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+            max-width: 220px;
+        }
+        tbody tr { cursor: pointer; transition: background 0.15s; }
+        tbody tr:hover { background: #f1f9f9; }
+        .cell-truncate {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .loading-state, .empty-state {
+            text-align: center;
+            padding: 48px 24px;
+            color: var(--text-secondary);
+        }
+        .loading-state i { font-size: 2rem; margin-bottom: 12px; opacity: 0.5; }
+        .pagination-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 12px 20px;
+            padding: 16px 0 0;
+            flex-shrink: 0;
+        }
+        .pagination-nav {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .page-size {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+        }
+        .page-size select {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-surface);
+            font-family: inherit;
+            font-size: 0.88rem;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+        .page-size select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+        .pagination-bar button {
+            padding: 8px 14px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-surface);
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.88rem;
+        }
+        .pagination-bar button:hover:not(:disabled) {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        .pagination-bar button:disabled { opacity: 0.45; cursor: not-allowed; }
+        .page-info { font-size: 0.88rem; color: var(--text-secondary); margin: 0 12px; }
+        .details-drawer {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: var(--details-width);
+            height: 100%;
+            background: var(--bg-surface);
+            box-shadow: -4px 0 24px rgba(0,0,0,0.12);
+            z-index: 200;
+            transform: translateX(100%);
+            transition: transform 0.28s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        .details-drawer.open { transform: translateX(0); }
+        .drawer-header {
+            padding: 20px 22px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .drawer-header h2 { margin: 0; font-size: 1.05rem; }
+        .close-icon { cursor: pointer; color: var(--text-secondary); font-size: 1.2rem; padding: 4px; }
+        .drawer-content {
+            padding: 20px 22px;
+            overflow-y: auto;
+            flex: 1;
+            font-size: 0.9rem;
+        }
+        .meta-row {
+            display: grid;
+            grid-template-columns: 110px 1fr;
+            gap: 8px 12px;
+            margin-bottom: 10px;
+            align-items: start;
+        }
+        .meta-label { color: var(--text-secondary); font-weight: 600; }
+        .meta-value { word-break: break-word; }
+        .code-box {
+            background: var(--bg-body);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 14px;
+            font-family: ui-monospace, monospace;
+            font-size: 0.82rem;
+            margin-top: 8px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .drawer-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.25);
+            z-index: 199;
+        }
+        .drawer-backdrop.show { display: block; }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .mode-toggle {
+            display: inline-flex;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            overflow: hidden;
+            background: var(--bg-body);
+        }
+        .mode-toggle button {
+            padding: 8px 16px;
+            border: none;
+            background: transparent;
+            font-family: inherit;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .mode-toggle button:hover { color: var(--primary-dark); }
+        .mode-toggle button.active {
+            background: var(--primary-color);
+            color: #fff;
+        }
+        .pollutant-params {
+            flex-shrink: 0;
+            margin-bottom: 16px;
+            padding: 16px 18px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            box-shadow: var(--shadow-sm);
+        }
+        .pollutant-params h3 {
+            margin: 0 0 12px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+        }
+        .params-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+        }
+        .params-table th,
+        .params-table td {
+            border: 1px solid var(--border-color);
+            padding: 10px 12px;
+            text-align: left;
+        }
+        .params-table thead th {
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            font-weight: 600;
+        }
+        .params-table tbody td { background: #fff; }
+        .sub-num { font-variant-numeric: tabular-nums; }
+        @media (max-width: 900px) {
+            .main-layout { flex-direction: column; }
+            .sidebar { width: 100%; max-height: 40vh; border-right: none; border-bottom: 1px solid var(--border-color); }
+            body { height: auto; min-height: 100vh; overflow: auto; }
+            .content { overflow: visible; }
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="brand"><i class="fas fa-flask"></i>环境污染物数据库</div>
+    <div class="header-right">
+        <div class="mode-toggle" role="group" aria-label="数据类型">
+            <button type="button" id="modeKin" class="active" onclick="setDataMode('kin')">动力学</button>
+            <button type="button" id="modeThermo" onclick="setDataMode('thermo')">热力学</button>
+        </div>
+        <span class="demo-badge">演示 · CCl₄ · 本地 CSV</span>
+    </div>
+</header>
+<div class="main-layout">
+    <aside class="sidebar" id="sidebarKin">
+        <div>
+            <div class="filter-title">数据集</div>
+            <div class="chip-group">
+                <span class="chip-label" style="cursor:default;border-color:var(--primary-color);background:var(--primary-light);color:var(--primary-dark);">
+                    有机氯化物 · CCl₄ · 动力学
+                </span>
+            </div>
+        </div>
+        <div>
+            <div class="filter-title">反应类型</div>
+            <div class="chip-group">
+                <input type="checkbox" id="rt_huanyuan" value="还原" onchange="applyFilters()" hidden>
+                <label for="rt_huanyuan" class="chip-label">还原</label>
+                <input type="checkbox" id="rt_yanghua" value="氧化" onchange="applyFilters()" hidden>
+                <label for="rt_yanghua" class="chip-label">氧化</label>
+                <input type="checkbox" id="rt_shengwu" value="生物降解" onchange="applyFilters()" hidden>
+                <label for="rt_shengwu" class="chip-label">生物降解</label>
+                <input type="checkbox" id="rt_xifu" value="吸附" onchange="applyFilters()" hidden>
+                <label for="rt_xifu" class="chip-label">吸附</label>
+                <input type="checkbox" id="rt_xifuxi" value="吸附/解吸" onchange="applyFilters()" hidden>
+                <label for="rt_xifuxi" class="chip-label">吸附/解吸</label>
+                <input type="checkbox" id="rt_hs" value="还原+生物降解" onchange="applyFilters()" hidden>
+                <label for="rt_hs" class="chip-label">还原+生物降解</label>
+                <input type="checkbox" id="rt_ho" value="还原+氧化" onchange="applyFilters()" hidden>
+                <label for="rt_ho" class="chip-label">还原+氧化</label>
+                <input type="checkbox" id="rt_sh" value="生物降解+还原" onchange="applyFilters()" hidden>
+                <label for="rt_sh" class="chip-label">生物降解+还原</label>
+                <input type="checkbox" id="rt_hydro" value="水解" onchange="applyFilters()" hidden>
+                <label for="rt_hydro" class="chip-label">水解</label>
+            </div>
+        </div>
+        <div>
+            <div class="filter-title">反应步骤</div>
+            <div class="chip-group">
+                <input type="checkbox" id="step_all" value="总反应" onchange="applyFilters()" hidden>
+                <label for="step_all" class="chip-label">总反应</label>
+                <input type="checkbox" id="step1" value="第1步" onchange="applyFilters()" hidden>
+                <label for="step1" class="chip-label">第1步</label>
+                <input type="checkbox" id="step2" value="第2步" onchange="applyFilters()" hidden>
+                <label for="step2" class="chip-label">第2步</label>
+                <input type="checkbox" id="step3" value="第3步" onchange="applyFilters()" hidden>
+                <label for="step3" class="chip-label">第3步</label>
+                <input type="checkbox" id="step_ms" value="multi-step" onchange="applyFilters()" hidden>
+                <label for="step_ms" class="chip-label">multi-step</label>
+                <input type="checkbox" id="step_other" value="其他" onchange="applyFilters()" hidden>
+                <label for="step_other" class="chip-label">其他 / NA</label>
+            </div>
+        </div>
+        <div>
+            <div class="filter-title">pH 范围</div>
+            <div class="slider-group">
+                <div class="slider-labels">
+                    <span id="phMinLabel">0.0</span>
+                    <span id="phMaxLabel">14.0</span>
+                </div>
+                <div class="range-container">
+                    <div class="range-track"></div>
+                    <div class="range-highlight" id="phHighlight"></div>
+                    <input type="range" id="phMin" min="0" max="14" step="0.1" value="0" oninput="onPhSliderInput()">
+                    <input type="range" id="phMax" min="0" max="14" step="0.1" value="14" oninput="onPhSliderInput()">
+                </div>
+            </div>
+        </div>
+        <div>
+            <div class="filter-title">温度范围 (°C)</div>
+            <div class="slider-group">
+                <div class="slider-labels">
+                    <span id="tempMinLabel">0</span>
+                    <span id="tempMaxLabel">100</span>
+                </div>
+                <div class="range-container">
+                    <div class="range-track"></div>
+                    <div class="range-highlight" id="tempHighlight"></div>
+                    <input type="range" id="tempMin" min="0" max="100" step="1" value="0" oninput="onTempSliderInput()">
+                    <input type="range" id="tempMax" min="0" max="100" step="1" value="100" oninput="onTempSliderInput()">
+                </div>
+            </div>
+        </div>
+        <div>
+            <button type="button" class="adv-toggle" id="advBtn" onclick="toggleAdvanced(this)">
+                <i class="fas fa-chevron-down"></i> 高级筛选（背景、氧化还原、描述）
+            </button>
+            <div class="advanced-panel" id="advancedPanel">
+                <input type="text" class="text-filter" id="filterBackground" placeholder="矿物类型 / 实验类型（mineral, 批次）" oninput="debouncedApply()">
+                <input type="text" class="text-filter" id="filterRedox" placeholder="氧气条件（好氧 / 厌氧）" oninput="debouncedApply()">
+                <input type="text" class="text-filter" id="filterSource" placeholder="描述 / 参考文献 / 期刊关键词" oninput="debouncedApply()">
+                <label style="display:flex;align-items:center;gap:8px;font-size:0.88rem;color:var(--text-secondary);cursor:pointer;">
+                    <input type="checkbox" id="onlySurfaceK" onchange="applyFilters()"> 仅显示含有效速率常数 (k) 的记录
+                </label>
+            </div>
+        </div>
+    </aside>
+    <aside class="sidebar" id="sidebarThermo" style="display:none;">
+        <div>
+            <div class="filter-title">数据集</div>
+            <div class="chip-group">
+                <span class="chip-label" style="cursor:default;border-color:var(--primary-color);background:var(--primary-light);color:var(--primary-dark);">
+                    有机氯化物 · CCl₄ · 热力学
+                </span>
+            </div>
+        </div>
+        <div>
+            <div class="filter-title">相 (Phase)</div>
+            <div class="chip-group" id="thermoPhaseGroup">
+                <input type="checkbox" id="ph_liquid" value="liquid" onchange="applyFilters()" hidden>
+                <label for="ph_liquid" class="chip-label">liquid</label>
+                <input type="checkbox" id="ph_solid" value="solid" onchange="applyFilters()" hidden>
+                <label for="ph_solid" class="chip-label">solid</label>
+                <input type="checkbox" id="ph_pt" value="phase transition" onchange="applyFilters()" hidden>
+                <label for="ph_pt" class="chip-label">phase transition</label>
+                <input type="checkbox" id="ph_vap" value="vaporization" onchange="applyFilters()" hidden>
+                <label for="ph_vap" class="chip-label">vaporization</label>
+                <input type="checkbox" id="ph_fus" value="fusion" onchange="applyFilters()" hidden>
+                <label for="ph_fus" class="chip-label">fusion</label>
+                <input type="checkbox" id="ph_sub" value="sublimation" onchange="applyFilters()" hidden>
+                <label for="ph_sub" class="chip-label">sublimation</label>
+                <input type="checkbox" id="ph_ch" value="change" onchange="applyFilters()" hidden>
+                <label for="ph_ch" class="chip-label">change</label>
+            </div>
+        </div>
+        <div>
+            <div class="filter-title">温度范围 (°C)</div>
+            <div class="slider-group">
+                <div class="slider-labels">
+                    <span id="tThMinLabel">−50</span>
+                    <span id="tThMaxLabel">350</span>
+                </div>
+                <div class="range-container">
+                    <div class="range-track"></div>
+                    <div class="range-highlight" id="tempThHighlight"></div>
+                    <input type="range" id="tempThMin" min="-50" max="350" step="1" value="-50" oninput="onThermoTempSliderInput()">
+                    <input type="range" id="tempThMax" min="-50" max="350" step="1" value="350" oninput="onThermoTempSliderInput()">
+                </div>
+            </div>
+        </div>
+        <div>
+            <button type="button" class="adv-toggle" id="advBtnTh" onclick="toggleAdvancedTh(this)">
+                <i class="fas fa-chevron-down"></i> 高级筛选
+            </button>
+            <div class="advanced-panel" id="advancedPanelTh">
+                <input type="text" class="text-filter" id="filterThSource" placeholder="数据来源关键词" oninput="debouncedApply()">
+                <input type="text" class="text-filter" id="filterThNote" placeholder="备注关键词" oninput="debouncedApply()">
+            </div>
+        </div>
+    </aside>
+    <main class="content">
+        <section class="pollutant-params" aria-label="污染物特征参数">
+            <h3>污染物特征参数</h3>
+            <table class="params-table">
+                <thead>
+                    <tr>
+                        <th>污染物</th>
+                        <th>分子量</th>
+                        <th>CAS 登录号</th>
+                        <th>熔点</th>
+                        <th>沸点</th>
+                        <th>密度</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>CCl<sub>4</sub></td>
+                        <td class="sub-num">153.823</td>
+                        <td class="sub-num">56-23-5</td>
+                        <td>−23&nbsp;°C</td>
+                        <td>76–77&nbsp;°C</td>
+                        <td>1.594&nbsp;g/cm<sup>3</sup></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <div class="content-header">
+            <h2>查询结果 <span class="result-count" id="resultCount">(0 条记录)</span></h2>
+        </div>
+        <div class="table-wrap">
+            <div id="loadingState" class="loading-state">
+                <i class="fas fa-circle-notch fa-spin"></i>
+                <p>正在加载数据，请稍候…</p>
+            </div>
+            <table id="dataTableKin" style="display:none;">
+                <thead>
+                    <tr>
+                        <th>反应物</th>
+                        <th>反应描述</th>
+                        <th>参数类型</th>
+                        <th>速率常数</th>
+                        <th>pH</th>
+                        <th>T</th>
+                        <th>参考文献</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBodyKin"></tbody>
+            </table>
+            <table id="dataTableThermo" style="display:none;">
+                <thead>
+                    <tr>
+                        <th>污染物</th>
+                        <th>T (°C)</th>
+                        <th>P (MPa)</th>
+                        <th>ρ (kg/m³)</th>
+                        <th>H (kJ/mol)</th>
+                        <th>Cp</th>
+                        <th>相</th>
+                        <th>数据来源</th>
+                        <th>备注</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBodyThermo"></tbody>
+            </table>
+            <div id="emptyState" class="empty-state" style="display:none;">
+                <p>没有找到符合条件的记录。</p>
+            </div>
+        </div>
+        <div class="pagination-bar" id="paginationBar" style="display:none;">
+            <div class="pagination-nav">
+                <button type="button" id="prevPage" onclick="changePage(-1)">上一页</button>
+                <span class="page-info" id="pageInfo"></span>
+                <button type="button" id="nextPage" onclick="changePage(1)">下一页</button>
+            </div>
+            <div class="page-size">
+                <label for="pageSizeSelect">每页显示</label>
+                <select id="pageSizeSelect" onchange="onPageSizeChange()" title="每页条数">
+                    <option value="10" selected>10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                    <option value="200">200</option>
+                    <option value="all">全部</option>
+                </select>
+                <span>条</span>
+            </div>
+        </div>
+    </main>
+</div>
+<div class="drawer-backdrop" id="drawerBackdrop" onclick="closeDetails()"></div>
+<aside class="details-drawer" id="detailsDrawer">
+    <div class="drawer-header">
+        <h2>数据详情</h2>
+        <span class="close-icon" onclick="closeDetails()"><i class="fas fa-times"></i></span>
+    </div>
+    <div class="drawer-content" id="detailContent"></div>
+</aside>
+
+<script>
+    const CSV_KIN = 'CCl4动力学.csv';
+    const CSV_THERMO = 'CCl4热力学.csv';
+
+    const KIN = {
+        desc: 'reaction_description（原文中对实验条件的简要描述，例：CT reduction in ultrapure water）',
+        eq: 'Chemical Reaction Equation（反应方程式例如CCl4 + e- →CCl3 + Cl-）',
+        step: 'reaction_step（总反应/第1步/第2步）',
+        rtype: 'reaction_type（还原 / 氧化 / 生物降解/还原+生物降解等）',
+        reactant: 'reactant（反应物）',
+        product: 'product（含产物生成比例）',
+        rate: 'rate_constant',
+        rateU: 'rate_constant_unit（min⁻¹ / h⁻¹ / L·m⁻²·h⁻¹）',
+        temp: 'temperature',
+        tempU: 'temperature_unit（°C / K）',
+        pH: 'pH',
+        ref: '参考文献',
+        journal: 'journal（文献发表所在期刊）',
+        mineral: 'mineral_type',
+        exp: 'experiment_type（批次 / 柱实验 / 田间）',
+        notes: 'notes（其他备注，如"CF yield 28%" / "k1 and k2 from sequential fitting"）',
+        half: 'half_life',
+        halfU: 'half_life_unit（h / min / d）',
+        ae: 'activation_energy（活化能）',
+        aeU: 'activation_energy_unit（kJ/mol）',
+        oxygen: 'oxygen_condition（氧气条件 好氧 / 厌氧 / 微好氧）',
+        order: 'reaction_order（1/0/2）',
+        pHnote: 'pH_note（"buffered" / "initial"）',
+        ic: 'initial_concentration',
+        icu: 'initial_concentration_unit（mg/L / μM / mM）',
+        msa: 'mineral_surface_area',
+        msau: 'mineral_surface_area_unit（m²/g）',
+        factor: '影响速率常数因素（pH/温度/反应物浓度/生成物浓度等）',
+        fn: '影响速率常数因子n'
+    };
+
+    const TH = {
+        pol: '污染物',
+        T: 'Temperature (C)',
+        P: 'Pressure (MPa)',
+        rho: 'Density (kg/m3)',
+        H: 'Enthalpy (kJ/mol)',
+        Cp: 'Cp (J/mol*K)',
+        phase: 'Phase',
+        src: '数据来源',
+        note: '备注'
+    };
+
+    let dataMode = 'kin';
+    let masterDataKin = [];
+    let masterDataThermo = [];
+    let filteredData = [];
+    let currentPage = 1;
+
+    function getItemsPerPage() {
+        const sel = document.getElementById('pageSizeSelect');
+        if (!sel) return 10;
+        if (sel.value === 'all') return Math.max(filteredData.length, 1);
+        const n = parseInt(sel.value, 10);
+        return Number.isFinite(n) && n > 0 ? n : 10;
+    }
+
+    function onPageSizeChange() {
+        currentPage = 1;
+        renderTable();
+    }
+
+    function setDataMode(mode) {
+        dataMode = mode;
+        document.getElementById('modeKin').classList.toggle('active', mode === 'kin');
+        document.getElementById('modeThermo').classList.toggle('active', mode === 'thermo');
+        document.getElementById('sidebarKin').style.display = mode === 'kin' ? 'flex' : 'none';
+        document.getElementById('sidebarThermo').style.display = mode === 'thermo' ? 'flex' : 'none';
+        document.getElementById('dataTableKin').style.display = 'none';
+        document.getElementById('dataTableThermo').style.display = 'none';
+        filteredData = mode === 'kin' ? [...masterDataKin] : [...masterDataThermo];
+        currentPage = 1;
+        if (mode === 'kin') {
+            const pm = parseFloat(document.getElementById('phMin').value);
+            const pM = parseFloat(document.getElementById('phMax').value);
+            updatePhHighlight(pm, pM);
+            document.getElementById('phMinLabel').innerText = pm.toFixed(1);
+            document.getElementById('phMaxLabel').innerText = pM.toFixed(1);
+            const tm = parseInt(document.getElementById('tempMin').value, 10);
+            const tM = parseInt(document.getElementById('tempMax').value, 10);
+            updateTempHighlight(tm, tM);
+            document.getElementById('tempMinLabel').innerText = String(tm);
+            document.getElementById('tempMaxLabel').innerText = String(tM);
+        } else {
+            const tm = parseInt(document.getElementById('tempThMin').value, 10);
+            const tM = parseInt(document.getElementById('tempThMax').value, 10);
+            updateThermoTempHighlight(tm, tM);
+            document.getElementById('tThMinLabel').innerText = tm < 0 ? '−' + String(-tm) : String(tm);
+            document.getElementById('tThMaxLabel').innerText = String(tM);
+        }
+        applyFilters();
+    }
+
+    function parseCSV(text) {
+        const rows = [];
+        let row = [];
+        let field = '';
+        let inQuotes = false;
+        const s = text.replace(/^\uFEFF/, '');
+        for (let i = 0; i < s.length; i++) {
+            const c = s[i];
+            if (inQuotes) {
+                if (c === '"' && s[i + 1] === '"') {
+                    field += '"';
+                    i++;
+                } else if (c === '"') {
+                    inQuotes = false;
+                } else {
+                    field += c;
+                }
+            } else {
+                if (c === '"') {
+                    inQuotes = true;
+                } else if (c === ',') {
+                    row.push(field);
+                    field = '';
+                } else if (c === '\r') {
+                    /* skip */
+                } else if (c === '\n') {
+                    row.push(field);
+                    if (row.some(cell => cell.length > 0)) rows.push(row);
+                    row = [];
+                    field = '';
+                } else {
+                    field += c;
+                }
+            }
+        }
+        if (field.length > 0 || row.length > 0) {
+            row.push(field);
+            if (row.some(cell => cell.length > 0)) rows.push(row);
+        }
+        if (rows.length < 2) return [];
+        const headers = rows[0].map(h => h.trim());
+        const result = [];
+        for (let r = 1; r < rows.length; r++) {
+            const cells = rows[r];
+            if (cells.length !== headers.length) continue;
+            const obj = {};
+            headers.forEach((h, idx) => { obj[h] = (cells[idx] || '').trim(); });
+            result.push(obj);
+        }
+        return result;
+    }
+
+    function firstNumber(s) {
+        if (s == null || s === '' || /^NA$/i.test(String(s).trim())) return null;
+        const m = String(s).match(/-?\d+(?:\.\d+)?/);
+        return m ? parseFloat(m[0]) : null;
+    }
+
+    function isNaVal(v) {
+        return !v || /^NA$/i.test(String(v).trim());
+    }
+
+    function stepBucket(v) {
+        const s = (v || '').trim().toLowerCase();
+        if (!s || s === 'na') return 'NA';
+        if (s === '总反应' || s === 'total reaction') return '总反应';
+        if (s === '第1步' || s === 'step 1') return '第1步';
+        if (s === '第2步' || s === 'step 2') return '第2步';
+        if (s === '第3步' || s === 'step 3') return '第3步';
+        if (s === 'multi-step') return 'multi-step';
+        return '其他';
+    }
+
+    function paramDisplayKin(row) {
+        const k = row[KIN.rate];
+        const ku = row[KIN.rateU];
+        if (!isNaVal(k)) {
+            const u = !isNaVal(ku) ? ku : '';
+            return { type: '速率常数 k', value: `${k}${u ? ' ' + u : ''}`.trim() };
+        }
+        return { type: '—', value: '—' };
+    }
+
+    function refTextKin(row) {
+        const d = (row[KIN.ref] || '').trim();
+        if (!d) return '';
+        return d.length > 120 ? d.slice(0, 120) + '…' : d;
+    }
+
+    let debounceTimer;
+    function debouncedApply() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(applyFilters, 220);
+    }
+
+    function onPhSliderInput() {
+        let minV = parseFloat(document.getElementById('phMin').value);
+        let maxV = parseFloat(document.getElementById('phMax').value);
+        if (minV > maxV) {
+            const t = minV;
+            document.getElementById('phMin').value = maxV;
+            document.getElementById('phMax').value = t;
+            minV = parseFloat(document.getElementById('phMin').value);
+            maxV = parseFloat(document.getElementById('phMax').value);
+        }
+        updatePhHighlight(minV, maxV);
+        document.getElementById('phMinLabel').innerText = minV.toFixed(1);
+        document.getElementById('phMaxLabel').innerText = maxV.toFixed(1);
+        applyFilters();
+    }
+
+    function onTempSliderInput() {
+        let minV = parseInt(document.getElementById('tempMin').value, 10);
+        let maxV = parseInt(document.getElementById('tempMax').value, 10);
+        if (minV > maxV) {
+            document.getElementById('tempMin').value = maxV;
+            document.getElementById('tempMax').value = minV;
+            minV = parseInt(document.getElementById('tempMin').value, 10);
+            maxV = parseInt(document.getElementById('tempMax').value, 10);
+        }
+        updateTempHighlight(minV, maxV);
+        document.getElementById('tempMinLabel').innerText = String(minV);
+        document.getElementById('tempMaxLabel').innerText = String(maxV);
+        applyFilters();
+    }
+
+    function updatePhHighlight(minV, maxV) {
+        const minEl = document.getElementById('phMin');
+        const maxEl = document.getElementById('phMax');
+        const minP = (minV - parseFloat(minEl.min)) / (parseFloat(minEl.max) - parseFloat(minEl.min)) * 100;
+        const maxP = (maxV - parseFloat(maxEl.min)) / (parseFloat(maxEl.max) - parseFloat(maxEl.min)) * 100;
+        const el = document.getElementById('phHighlight');
+        el.style.left = minP + '%';
+        el.style.width = Math.max(0, maxP - minP) + '%';
+    }
+
+    function updateTempHighlight(minV, maxV) {
+        const minEl = document.getElementById('tempMin');
+        const maxEl = document.getElementById('tempMax');
+        const minP = (minV - parseInt(minEl.min, 10)) / (parseInt(maxEl.max, 10) - parseInt(minEl.min, 10)) * 100;
+        const maxP = (maxV - parseInt(maxEl.min, 10)) / (parseInt(maxEl.max, 10) - parseInt(minEl.min, 10)) * 100;
+        const el = document.getElementById('tempHighlight');
+        el.style.left = minP + '%';
+        el.style.width = Math.max(0, maxP - minP) + '%';
+    }
+
+    function onThermoTempSliderInput() {
+        let minV = parseInt(document.getElementById('tempThMin').value, 10);
+        let maxV = parseInt(document.getElementById('tempThMax').value, 10);
+        if (minV > maxV) {
+            document.getElementById('tempThMin').value = maxV;
+            document.getElementById('tempThMax').value = minV;
+            minV = parseInt(document.getElementById('tempThMin').value, 10);
+            maxV = parseInt(document.getElementById('tempThMax').value, 10);
+        }
+        updateThermoTempHighlight(minV, maxV);
+        document.getElementById('tThMinLabel').innerText = minV < 0 ? '−' + String(-minV) : String(minV);
+        document.getElementById('tThMaxLabel').innerText = String(maxV);
+        applyFilters();
+    }
+
+    function updateThermoTempHighlight(minV, maxV) {
+        const minEl = document.getElementById('tempThMin');
+        const maxEl = document.getElementById('tempThMax');
+        const lo = parseInt(minEl.min, 10);
+        const hi = parseInt(maxEl.max, 10);
+        const minP = (minV - lo) / (hi - lo) * 100;
+        const maxP = (maxV - lo) / (hi - lo) * 100;
+        const el = document.getElementById('tempThHighlight');
+        el.style.left = minP + '%';
+        el.style.width = Math.max(0, maxP - minP) + '%';
+    }
+
+    function toggleAdvanced(btn) {
+        document.getElementById('advancedPanel').classList.toggle('show');
+        btn.classList.toggle('active');
+    }
+
+    function toggleAdvancedTh(btn) {
+        document.getElementById('advancedPanelTh').classList.toggle('show');
+        btn.classList.toggle('active');
+    }
+
+    function applyFilters() {
+        if (dataMode === 'kin') applyFiltersKin();
+        else applyFiltersThermo();
+        currentPage = 1;
+        renderTable();
+    }
+
+    function applyFiltersKin() {
+        const rtVals = Array.from(document.querySelectorAll([
+            '#rt_huanyuan', '#rt_yanghua', '#rt_shengwu', '#rt_xifu', '#rt_xifuxi',
+            '#rt_hs', '#rt_ho', '#rt_sh', '#rt_hydro'
+        ].join(','))).filter(c => c.checked).map(c => c.value);
+        const stepVals = Array.from(document.querySelectorAll(
+            '#step_all,#step1,#step2,#step3,#step_ms,#step_other'
+        )).filter(c => c.checked).map(c => c.value);
+        const phMin = parseFloat(document.getElementById('phMin').value);
+        const phMax = parseFloat(document.getElementById('phMax').value);
+        const tempMin = parseInt(document.getElementById('tempMin').value, 10);
+        const tempMax = parseInt(document.getElementById('tempMax').value, 10);
+        const bgText = document.getElementById('filterBackground').value.toLowerCase().trim();
+        const redoxText = document.getElementById('filterRedox').value.toLowerCase().trim();
+        const sourceText = document.getElementById('filterSource').value.toLowerCase().trim();
+        const onlyK = document.getElementById('onlySurfaceK').checked;
+
+        filteredData = masterDataKin.filter(item => {
+            if (rtVals.length && !rtVals.includes(item[KIN.rtype])) return false;
+            if (stepVals.length) {
+                const b = stepBucket(item[KIN.step]);
+                const ok = stepVals.some(sel => {
+                    if (sel === '其他') return b === '其他' || b === 'NA';
+                    return sel === b;
+                });
+                if (!ok) return false;
+            }
+            const ph = firstNumber(item[KIN.pH]);
+            if (ph != null && (ph < phMin || ph > phMax)) return false;
+            const t = firstNumber(item[KIN.temp]);
+            if (t != null && (t < tempMin || t > tempMax)) return false;
+            if (bgText) {
+                const blob = [
+                    item[KIN.mineral], item[KIN.exp], item[KIN.notes]
+                ].filter(Boolean).join(' ').toLowerCase();
+                if (!blob.includes(bgText)) return false;
+            }
+            if (redoxText) {
+                const ox = (item[KIN.oxygen] || '').toLowerCase();
+                if (!ox.includes(redoxText)) return false;
+            }
+            if (sourceText) {
+                const desc = (item[KIN.desc] || '').toLowerCase();
+                const ref = (item[KIN.ref] || '').toLowerCase();
+                const jou = (item[KIN.journal] || '').toLowerCase();
+                if (!desc.includes(sourceText) && !ref.includes(sourceText) && !jou.includes(sourceText)) return false;
+            }
+            if (onlyK && isNaVal(item[KIN.rate])) return false;
+            return true;
+        });
+    }
+
+    function applyFiltersThermo() {
+        const phaseVals = Array.from(document.querySelectorAll(
+            '#ph_liquid,#ph_solid,#ph_pt,#ph_vap,#ph_fus,#ph_sub,#ph_ch'
+        )).filter(c => c.checked).map(c => c.value);
+        const tMin = parseInt(document.getElementById('tempThMin').value, 10);
+        const tMax = parseInt(document.getElementById('tempThMax').value, 10);
+        const srcText = document.getElementById('filterThSource').value.toLowerCase().trim();
+        const noteText = document.getElementById('filterThNote').value.toLowerCase().trim();
+
+        filteredData = masterDataThermo.filter(item => {
+            if (phaseVals.length && !phaseVals.includes((item[TH.phase] || '').trim())) return false;
+            const tc = firstNumber(item[TH.T]);
+            if (tc != null && (tc < tMin || tc > tMax)) return false;
+            if (srcText && !(item[TH.src] || '').toLowerCase().includes(srcText)) return false;
+            if (noteText && !(item[TH.note] || '').toLowerCase().includes(noteText)) return false;
+            return true;
+        });
+    }
+
+    function renderTable() {
+        const emptyState = document.getElementById('emptyState');
+        const paginationBar = document.getElementById('paginationBar');
+        const tableKin = document.getElementById('dataTableKin');
+        const tableTh = document.getElementById('dataTableThermo');
+        document.getElementById('resultCount').innerText = `(${filteredData.length} 条记录)`;
+
+        if (filteredData.length === 0) {
+            emptyState.style.display = 'block';
+            tableKin.style.display = 'none';
+            tableTh.style.display = 'none';
+            paginationBar.style.display = 'none';
+            return;
+        }
+        emptyState.style.display = 'none';
+        paginationBar.style.display = 'flex';
+        if (dataMode === 'kin') {
+            tableKin.style.display = 'table';
+            tableTh.style.display = 'none';
+            renderTableKin();
+        } else {
+            tableKin.style.display = 'none';
+            tableTh.style.display = 'table';
+            renderTableThermo();
+        }
+    }
+
+    function renderTableKin() {
+        const tbody = document.getElementById('resultsBodyKin');
+        tbody.innerHTML = '';
+        const perPage = getItemsPerPage();
+        const totalPages = Math.max(1, Math.ceil(filteredData.length / perPage));
+        if (currentPage > totalPages) currentPage = totalPages;
+        const start = (currentPage - 1) * perPage;
+        const pageItems = filteredData.slice(start, start + perPage);
+        for (const item of pageItems) {
+            const tr = document.createElement('tr');
+            tr.onclick = () => openDetailsKin(item);
+            const p = paramDisplayKin(item);
+            const phDisp = item[KIN.pH] && !isNaVal(item[KIN.pH]) ? item[KIN.pH] : '—';
+            const tRaw = item[KIN.temp];
+            const tDisp = tRaw && !isNaVal(tRaw) ? `${tRaw} ${item[KIN.tempU] || ''}`.trim() : '—';
+            tr.innerHTML = `
+                <td>${escapeHtml(item[KIN.reactant] || '—')}</td>
+                <td><div class="cell-truncate">${escapeHtml(item[KIN.desc] || '—')}</div></td>
+                <td>${escapeHtml(p.type)}</td>
+                <td>${escapeHtml(p.value)}</td>
+                <td>${escapeHtml(phDisp)}</td>
+                <td>${escapeHtml(tDisp)}</td>
+                <td><div class="cell-truncate">${escapeHtml(refTextKin(item))}</div></td>
+            `;
+            tbody.appendChild(tr);
+        }
+        document.getElementById('pageInfo').innerText = `第 ${currentPage} / ${totalPages} 页`;
+        document.getElementById('prevPage').disabled = currentPage <= 1;
+        document.getElementById('nextPage').disabled = currentPage >= totalPages;
+    }
+
+    function renderTableThermo() {
+        const tbody = document.getElementById('resultsBodyThermo');
+        tbody.innerHTML = '';
+        const perPage = getItemsPerPage();
+        const totalPages = Math.max(1, Math.ceil(filteredData.length / perPage));
+        if (currentPage > totalPages) currentPage = totalPages;
+        const start = (currentPage - 1) * perPage;
+        const pageItems = filteredData.slice(start, start + perPage);
+        const cell = (row, k) => {
+            const v = row[k];
+            return (v != null && String(v).trim() !== '') ? String(v).trim() : '';
+        };
+        for (const item of pageItems) {
+            const tr = document.createElement('tr');
+            tr.onclick = () => openDetailsThermo(item);
+            tr.innerHTML = `
+                <td>${escapeHtml(cell(item, TH.pol) || '—')}</td>
+                <td>${escapeHtml(cell(item, TH.T) || '—')}</td>
+                <td>${escapeHtml(cell(item, TH.P) || '—')}</td>
+                <td>${escapeHtml(cell(item, TH.rho) || '—')}</td>
+                <td>${escapeHtml(cell(item, TH.H) || '—')}</td>
+                <td>${escapeHtml(cell(item, TH.Cp) || '—')}</td>
+                <td>${escapeHtml(cell(item, TH.phase) || '—')}</td>
+                <td><div class="cell-truncate">${escapeHtml(cell(item, TH.src) || '—')}</div></td>
+                <td><div class="cell-truncate">${escapeHtml(cell(item, TH.note) || '—')}</div></td>
+            `;
+            tbody.appendChild(tr);
+        }
+        document.getElementById('pageInfo').innerText = `第 ${currentPage} / ${totalPages} 页`;
+        document.getElementById('prevPage').disabled = currentPage <= 1;
+        document.getElementById('nextPage').disabled = currentPage >= totalPages;
+    }
+
+    function escapeHtml(s) {
+        if (s == null) return '';
+        const d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+    }
+
+    function changePage(delta) {
+        const perPage = getItemsPerPage();
+        const totalPages = Math.max(1, Math.ceil(filteredData.length / perPage));
+        currentPage = Math.min(totalPages, Math.max(1, currentPage + delta));
+        renderTable();
+    }
+
+    function openDetailsKin(item) {
+        const p = paramDisplayKin(item);
+        const html = `
+            <div class="meta-row"><span class="meta-label">反应物</span><span class="meta-value">${escapeHtml(item[KIN.reactant] || '—')}</span></div>
+            <div class="meta-row"><span class="meta-label">反应类型</span><span class="meta-value">${escapeHtml(item[KIN.rtype] || '—')}</span></div>
+            <div class="meta-row"><span class="meta-label">反应步骤</span><span class="meta-value">${escapeHtml(item[KIN.step] || '—')}</span></div>
+            <div class="meta-row"><span class="meta-label">反应级数</span><span class="meta-value">${escapeHtml(item[KIN.order] || '—')}</span></div>
+            <div class="meta-row"><span class="meta-label">参数</span><span class="meta-value">${escapeHtml(p.type)}：${escapeHtml(p.value)}</span></div>
+            <div class="meta-row"><span class="meta-label">pH / T</span><span class="meta-value">${escapeHtml(item[KIN.pH] || '—')} · ${escapeHtml(item[KIN.temp] || '—')} ${escapeHtml(item[KIN.tempU] || '')}</span></div>
+            <div class="meta-row"><span class="meta-label">pH 说明</span><span class="meta-value">${escapeHtml(item[KIN.pHnote] || '—')}</span></div>
+            <div class="meta-row"><span class="meta-label">氧气条件</span><span class="meta-value">${escapeHtml(item[KIN.oxygen] || '—')}</span></div>
+            <div class="meta-row"><span class="meta-label">矿物</span><span class="meta-value">${escapeHtml(item[KIN.mineral] || '—')} ${escapeHtml(item[KIN.msa] || '')} ${escapeHtml(item[KIN.msau] || '')}</span></div>
+            <div class="meta-row"><span class="meta-label">实验类型</span><span class="meta-value">${escapeHtml(item[KIN.exp] || '—')}</span></div>
+            <div class="meta-row"><span class="meta-label">初始浓度</span><span class="meta-value">${escapeHtml(item[KIN.ic] || '—')} ${escapeHtml(item[KIN.icu] || '')}</span></div>
+            <div class="meta-row"><span class="meta-label">半衰期</span><span class="meta-value">${escapeHtml(item[KIN.half] || '—')} ${escapeHtml(item[KIN.halfU] || '')}</span></div>
+            <div class="meta-row"><span class="meta-label">活化能</span><span class="meta-value">${escapeHtml(item[KIN.ae] || '—')} ${escapeHtml(item[KIN.aeU] || '')}</span></div>
+            <div class="meta-row"><span class="meta-label">期刊</span><span class="meta-value">${escapeHtml(item[KIN.journal] || '—')}</span></div>
+            <p style="margin:16px 0 6px;font-weight:700;color:var(--text-secondary);font-size:0.8rem;">反应方程式</p>
+            <div class="code-box">${escapeHtml(item[KIN.eq] || '—')}</div>
+            <p style="margin:16px 0 6px;font-weight:700;color:var(--text-secondary);font-size:0.8rem;">参考文献</p>
+            <div class="code-box">${escapeHtml((item[KIN.ref] || '').trim() || '—')}</div>
+            <p style="margin:16px 0 6px;font-weight:700;color:var(--text-secondary);font-size:0.8rem;">实验描述</p>
+            <div class="code-box">${escapeHtml(item[KIN.desc] || '—')}</div>
+            <p style="margin:16px 0 6px;font-weight:700;color:var(--text-secondary);font-size:0.8rem;">备注</p>
+            <div class="code-box">${escapeHtml(item[KIN.notes] || '—')}</div>
+        `;
+        document.getElementById('detailContent').innerHTML = html;
+        document.getElementById('detailsDrawer').classList.add('open');
+        document.getElementById('drawerBackdrop').classList.add('show');
+    }
+
+    function openDetailsThermo(item) {
+        const row = (k) => {
+            const v = item[k];
+            return (v != null && String(v).trim() !== '') ? String(v).trim() : '—';
+        };
+        const html = `
+            <div class="meta-row"><span class="meta-label">污染物</span><span class="meta-value">${escapeHtml(row(TH.pol))}</span></div>
+            <div class="meta-row"><span class="meta-label">温度</span><span class="meta-value">${escapeHtml(row(TH.T))} °C</span></div>
+            <div class="meta-row"><span class="meta-label">压力</span><span class="meta-value">${escapeHtml(row(TH.P))} MPa</span></div>
+            <div class="meta-row"><span class="meta-label">密度</span><span class="meta-value">${escapeHtml(row(TH.rho))} kg/m³</span></div>
+            <div class="meta-row"><span class="meta-label">焓</span><span class="meta-value">${escapeHtml(row(TH.H))} kJ/mol</span></div>
+            <div class="meta-row"><span class="meta-label">Cp</span><span class="meta-value">${escapeHtml(row(TH.Cp))}</span></div>
+            <div class="meta-row"><span class="meta-label">相</span><span class="meta-value">${escapeHtml(row(TH.phase))}</span></div>
+            <div class="meta-row"><span class="meta-label">数据来源</span><span class="meta-value">${escapeHtml(row(TH.src))}</span></div>
+            <div class="meta-row"><span class="meta-label">备注</span><span class="meta-value">${escapeHtml(row(TH.note))}</span></div>
+        `;
+        document.getElementById('detailContent').innerHTML = html;
+        document.getElementById('detailsDrawer').classList.add('open');
+        document.getElementById('drawerBackdrop').classList.add('show');
+    }
+
+    function closeDetails() {
+        document.getElementById('detailsDrawer').classList.remove('open');
+        document.getElementById('drawerBackdrop').classList.remove('show');
+    }
+
+    window.onload = async () => {
+        updatePhHighlight(parseFloat(document.getElementById('phMin').value), parseFloat(document.getElementById('phMax').value));
+        updateTempHighlight(parseInt(document.getElementById('tempMin').value, 10), parseInt(document.getElementById('tempMax').value, 10));
+        const ttm = parseInt(document.getElementById('tempThMin').value, 10);
+        const ttM = parseInt(document.getElementById('tempThMax').value, 10);
+        updateThermoTempHighlight(ttm, ttM);
+        document.getElementById('tThMinLabel').innerText = ttm < 0 ? '−' + String(-ttm) : String(ttm);
+        try {
+            const [rKin, rTh] = await Promise.all([fetch(CSV_KIN), fetch(CSV_THERMO)]);
+            if (!rKin.ok) throw new Error('动力学 CSV HTTP ' + rKin.status);
+            if (!rTh.ok) throw new Error('热力学 CSV HTTP ' + rTh.status);
+            const [txtKin, txtTh] = await Promise.all([rKin.text(), rTh.text()]);
+            masterDataKin = parseCSV(txtKin);
+            masterDataThermo = parseCSV(txtTh);
+            filteredData = [...masterDataKin];
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('dataTableKin').style.display = 'table';
+            applyFilters();
+        } catch (e) {
+            console.error(e);
+            document.getElementById('loadingState').innerHTML = `
+                <i class="fas fa-exclamation-triangle" style="color:#dc3545;font-size:2rem;"></i>
+                <h3 style="color:#dc3545;">数据加载失败</h3>
+                <p>无法读取 <code>CCl4动力学.csv</code> 或 <code>CCl4热力学.csv</code>。</p>
+                <div style="background:#fff3cd;padding:15px;border-radius:8px;text-align:left;margin-top:16px;font-size:0.88rem;color:#856404;">
+                    <strong>请通过本地 Web 服务打开本页</strong>，例如在本目录执行：<br>
+                    <code style="display:block;margin-top:8px;">python3 -m http.server 8765</code>
+                    然后访问 <code>http://localhost:8765/index.html</code>，并确保两个 csv 与 <code>index.html</code> 在同一目录。
+                </div>
+            `;
+        }
+    };
+</script>
+</body>
+</html>
