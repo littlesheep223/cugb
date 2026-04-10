@@ -1,0 +1,13 @@
+# GitCode / GitLab 系：通过 CI 将静态文件发布到 Pages
+# 构建产物目录必须为 public，站点一般为：https://<namespace>.gitcode.com/<项目路径>/
+pages:
+  stage: deploy
+  script:
+    - mkdir -p public
+    - cp index.html README.md public/
+    - cp CCl4*.csv public/
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
