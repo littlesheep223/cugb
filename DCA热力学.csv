@@ -1,0 +1,35 @@
+污染物,Temperature (C),Pressure (MPa),Density (kg/m3),Enthalpy (kJ/mol),Entropy (J/mol*K),Cv (J/mol*K),Cp (J/mol*K),Solubility（mol /kg*atm）,Viscosity (uPa*s),Phase,数据来源
+C2H4Cl2,,,,,208.53,,,,,liquid,NIST
+C2H4Cl2,298.15,,,,,,129.4,,,liquid,NIST
+C2H4Cl2,298.15,,,,,,128.81,,,liquid,NIST
+C2H4Cl2,298.15,,,,,,128.99,,,liquid,NIST
+C2H4Cl2,298.15,,,,,,129,,,liquid,NIST
+C2H4Cl2,298.15,,,,,,128.99,,,liquid,NIST
+C2H4Cl2,298.15,,,,,,128.6,,,liquid,NIST
+C2H4Cl2,293,,,,,,129.2,,,liquid,NIST
+C2H4Cl2,298.15,,,,,,129.54,,,liquid,NIST
+C2H4Cl2,298,,,,,,129.7,,,liquid,NIST
+C2H4Cl2,293,,,,,,124.3,,,liquid,NIST
+C2H4Cl2,298,,,,,,123,,,liquid,NIST
+C2H4Cl2,298.15,,,,,,128.9,,,liquid,NIST
+C2H4Cl2,300,,,,,,131,,,liquid,NIST
+C2H4Cl2,298,,,,,,122.2,,,liquid,NIST
+C2H4Cl2,356.6,,,31.98,,,,,,vaporization,NIST
+C2H4Cl2,371,,,31.1,,,,,,vaporization,NIST
+C2H4Cl2,294,,,34.8,,,,,,vaporization,NIST
+C2H4Cl2,383,,,31.1,,,,,,vaporization,NIST
+C2H4Cl2,538,,,40.8,,,,,,vaporization,NIST
+C2H4Cl2,294,,,34.8,,,,,,vaporization,NIST
+C2H4Cl2,316,,,34.7,,,,,,vaporization,NIST
+C2H4Cl2,273,,,33.91,,,,,,vaporization,NIST
+C2H4Cl2,258,,,37.5,,,,,,vaporization,NIST
+C2H4Cl2,237.2,,,8.83,,,,,,fusion,NIST
+C2H4Cl2,237，2,,,,16.2,,,,,fusion,NIST
+C2H4Cl2,175,,,,36.8,,,,,fusion,NIST
+C2H4Cl2,175,,,2.845,,,,,,phase transition,NIST
+C2H4Cl2,237.6,,,8.745,,,,,,phase transition,NIST
+C2H4Cl2,175,,,,16.2,,,,,phase transition,NIST
+C2H4Cl2,237.6,,,,36.8,,,,,phase transition,NIST
+C2H4Cl2 = C2H3Cl + HCl,,,,50.6 ± 4.2,,,,,,,NIST
+C2H4Cl2 + 2H2 = C2H6 + 2HCl,,,,-143.0 ± 0.96,,,,,,,NIST
+C2H4Cl2 + Cl2 = HCl + C2H3Cl3,,,,-116,,,,,,,NIST

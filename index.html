@@ -441,11 +441,15 @@
 <header>
     <div class="brand"><i class="fas fa-flask"></i>环境污染物数据库</div>
     <div class="header-right">
+        <div class="mode-toggle" role="group" aria-label="污染物">
+            <button type="button" id="polCcl4" class="active" onclick="setPollutant('ccl4')">CCl₄</button>
+            <button type="button" id="polDca" onclick="setPollutant('dca')">DCA</button>
+        </div>
         <div class="mode-toggle" role="group" aria-label="数据类型">
             <button type="button" id="modeKin" class="active" onclick="setDataMode('kin')">动力学</button>
             <button type="button" id="modeThermo" onclick="setDataMode('thermo')">热力学</button>
         </div>
-        <span class="demo-badge">演示 · CCl₄ · 本地 CSV</span>
+        <span class="demo-badge" id="demoBadge">演示 · 本地 CSV</span>
     </div>
 </header>
 <div class="main-layout">
@@ -453,7 +457,7 @@
         <div>
             <div class="filter-title">数据集</div>
             <div class="chip-group">
-                <span class="chip-label" style="cursor:default;border-color:var(--primary-color);background:var(--primary-light);color:var(--primary-dark);">
+                <span class="chip-label" id="sidebarKinTag" style="cursor:default;border-color:var(--primary-color);background:var(--primary-light);color:var(--primary-dark);">
                     有机氯化物 · CCl₄ · 动力学
                 </span>
             </div>
@@ -546,7 +550,7 @@
         <div>
             <div class="filter-title">数据集</div>
             <div class="chip-group">
-                <span class="chip-label" style="cursor:default;border-color:var(--primary-color);background:var(--primary-light);color:var(--primary-dark);">
+                <span class="chip-label" id="sidebarThermoTag" style="cursor:default;border-color:var(--primary-color);background:var(--primary-light);color:var(--primary-dark);">
                     有机氯化物 · CCl₄ · 热力学
                 </span>
             </div>
@@ -609,7 +613,7 @@
                         <th>密度</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="paramsTableBody">
                     <tr>
                         <td>CCl<sub>4</sub></td>
                         <td class="sub-num">153.823</td>
@@ -694,8 +698,19 @@
 </aside>
 
 <script>
-    const CSV_KIN = 'CCl4动力学.csv';
-    const CSV_THERMO = 'CCl4热力学.csv';
+    const CSV_BY_POL = {
+        ccl4: { kin: 'CCl4动力学.csv', thermo: 'CCl4热力学.csv', badge: 'CCl₄' },
+        dca: { kin: 'DCA动力学.csv', thermo: 'DCA热力学.csv', badge: 'DCA' }
+    };
+
+    const PARAM_ROWS = {
+        ccl4: {
+            name: 'CCl<sub>4</sub>', mw: '153.823', cas: '56-23-5', mp: '−23&nbsp;°C', bp: '76–77&nbsp;°C', rho: '1.594&nbsp;g/cm<sup>3</sup>'
+        },
+        dca: {
+            name: 'C<sub>2</sub>H<sub>4</sub>Cl<sub>2</sub>（DCA）', mw: '98.959', cas: '107-06-2', mp: '−35.7&nbsp;°C (101.3&nbsp;kPa)', bp: '83.5&nbsp;°C (101.3&nbsp;kPa)', rho: '1.256&nbsp;g/cm³ (25&nbsp;°C)'
+        }
+    };
 
     const KIN = {
         desc: 'reaction_description（原文中对实验条件的简要描述，例：CT reduction in ultrapure water）',
@@ -741,11 +756,87 @@
         note: '备注'
     };
 
+    let currentPollutant = 'ccl4';
     let dataMode = 'kin';
     let masterDataKin = [];
     let masterDataThermo = [];
     let filteredData = [];
     let currentPage = 1;
+
+    function currentCsvPaths() {
+        return CSV_BY_POL[currentPollutant];
+    }
+
+    function updateParamTable() {
+        const p = PARAM_ROWS[currentPollutant];
+        if (!p) return;
+        document.getElementById('paramsTableBody').innerHTML = `
+            <tr>
+                <td>${p.name}</td>
+                <td class="sub-num">${p.mw}</td>
+                <td class="sub-num">${p.cas}</td>
+                <td>${p.mp}</td>
+                <td>${p.bp}</td>
+                <td>${p.rho}</td>
+            </tr>`;
+    }
+
+    function updatePollutantLabels() {
+        const c = currentCsvPaths();
+        document.getElementById('demoBadge').textContent = '演示 · ' + c.badge + ' · 本地 CSV';
+        const d = currentPollutant === 'ccl4' ? 'CCl₄' : 'DCA';
+        document.getElementById('sidebarKinTag').textContent = '有机氯化物 · ' + d + ' · 动力学';
+        document.getElementById('sidebarThermoTag').textContent = '有机氯化物 · ' + d + ' · 热力学';
+    }
+
+    async function setPollutant(key) {
+        if (key === currentPollutant) return;
+        currentPollutant = key;
+        document.getElementById('polCcl4').classList.toggle('active', key === 'ccl4');
+        document.getElementById('polDca').classList.toggle('active', key === 'dca');
+        updateParamTable();
+        updatePollutantLabels();
+        closeDetails();
+        await loadPollutantCsvs();
+    }
+
+    async function loadPollutantCsvs() {
+        const paths = currentCsvPaths();
+        const load = document.getElementById('loadingState');
+        const dataTableKin = document.getElementById('dataTableKin');
+        const dataTableThermo = document.getElementById('dataTableThermo');
+        const emptyState = document.getElementById('emptyState');
+        const paginationBar = document.getElementById('paginationBar');
+        load.style.display = 'block';
+        load.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i><p>正在加载数据，请稍候…</p>';
+        dataTableKin.style.display = 'none';
+        dataTableThermo.style.display = 'none';
+        emptyState.style.display = 'none';
+        paginationBar.style.display = 'none';
+        try {
+            const [rKin, rTh] = await Promise.all([fetch(paths.kin), fetch(paths.thermo)]);
+            if (!rKin.ok) throw new Error('动力学 ' + rKin.status);
+            if (!rTh.ok) throw new Error('热力学 ' + rTh.status);
+            const [txtKin, txtTh] = await Promise.all([rKin.text(), rTh.text()]);
+            masterDataKin = parseCSV(txtKin);
+            masterDataThermo = parseCSV(txtTh);
+            filteredData = dataMode === 'kin' ? [...masterDataKin] : [...masterDataThermo];
+            currentPage = 1;
+            load.style.display = 'none';
+            applyFilters();
+        } catch (e) {
+            console.error(e);
+            const pk = paths.kin;
+            const pt = paths.thermo;
+            load.innerHTML = `
+                <i class="fas fa-exclamation-triangle" style="color:#dc3545;font-size:2rem;"></i>
+                <h3 style="color:#dc3545;">数据加载失败</h3>
+                <p>无法读取 <code>${escapeHtml(pk)}</code> 或 <code>${escapeHtml(pt)}</code>。</p>
+                <div style="background:#fff3cd;padding:15px;border-radius:8px;text-align:left;margin-top:16px;font-size:0.88rem;color:#856404;">
+                    请通过 Web 服务打开本页，并确保上述 CSV 与 <code>index.html</code> 在同一目录。
+                </div>`;
+        }
+    }
 
     function getItemsPerPage() {
         const sel = document.getElementById('pageSizeSelect');
@@ -1215,36 +1306,15 @@
     }
 
     window.onload = async () => {
+        updateParamTable();
+        updatePollutantLabels();
         updatePhHighlight(parseFloat(document.getElementById('phMin').value), parseFloat(document.getElementById('phMax').value));
         updateTempHighlight(parseInt(document.getElementById('tempMin').value, 10), parseInt(document.getElementById('tempMax').value, 10));
         const ttm = parseInt(document.getElementById('tempThMin').value, 10);
         const ttM = parseInt(document.getElementById('tempThMax').value, 10);
         updateThermoTempHighlight(ttm, ttM);
         document.getElementById('tThMinLabel').innerText = ttm < 0 ? '−' + String(-ttm) : String(ttm);
-        try {
-            const [rKin, rTh] = await Promise.all([fetch(CSV_KIN), fetch(CSV_THERMO)]);
-            if (!rKin.ok) throw new Error('动力学 CSV HTTP ' + rKin.status);
-            if (!rTh.ok) throw new Error('热力学 CSV HTTP ' + rTh.status);
-            const [txtKin, txtTh] = await Promise.all([rKin.text(), rTh.text()]);
-            masterDataKin = parseCSV(txtKin);
-            masterDataThermo = parseCSV(txtTh);
-            filteredData = [...masterDataKin];
-            document.getElementById('loadingState').style.display = 'none';
-            document.getElementById('dataTableKin').style.display = 'table';
-            applyFilters();
-        } catch (e) {
-            console.error(e);
-            document.getElementById('loadingState').innerHTML = `
-                <i class="fas fa-exclamation-triangle" style="color:#dc3545;font-size:2rem;"></i>
-                <h3 style="color:#dc3545;">数据加载失败</h3>
-                <p>无法读取 <code>CCl4动力学.csv</code> 或 <code>CCl4热力学.csv</code>。</p>
-                <div style="background:#fff3cd;padding:15px;border-radius:8px;text-align:left;margin-top:16px;font-size:0.88rem;color:#856404;">
-                    <strong>请通过本地 Web 服务打开本页</strong>，例如在本目录执行：<br>
-                    <code style="display:block;margin-top:8px;">python3 -m http.server 8765</code>
-                    然后访问 <code>http://localhost:8765/index.html</code>，并确保两个 csv 与 <code>index.html</code> 在同一目录。
-                </div>
-            `;
-        }
+        await loadPollutantCsvs();
     };
 </script>
 </body>

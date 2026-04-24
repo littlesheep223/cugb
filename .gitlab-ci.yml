@@ -5,7 +5,7 @@ pages:
   script:
     - mkdir -p public
     - cp index.html README.md public/
-    - cp CCl4*.csv public/
+    - cp CCl4*.csv DCA*.csv public/
   artifacts:
     paths:
       - public
