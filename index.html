@@ -444,6 +444,7 @@
         <div class="mode-toggle" role="group" aria-label="污染物">
             <button type="button" id="polCcl4" class="active" onclick="setPollutant('ccl4')">CCl₄</button>
             <button type="button" id="polDca" onclick="setPollutant('dca')">DCA</button>
+            <button type="button" id="polAs" onclick="setPollutant('as')">As</button>
         </div>
         <div class="mode-toggle" role="group" aria-label="数据类型">
             <button type="button" id="modeKin" class="active" onclick="setDataMode('kin')">动力学</button>
@@ -699,8 +700,9 @@
 
 <script>
     const CSV_BY_POL = {
-        ccl4: { kin: 'CCl4动力学.csv', thermo: 'CCl4热力学.csv', badge: 'CCl₄' },
-        dca: { kin: 'DCA动力学.csv', thermo: 'DCA热力学.csv', badge: 'DCA' }
+        ccl4: { kin: 'CCl4动力学.csv', thermo: 'CCl4热力学.csv', badge: 'CCl₄', cat: '有机氯化物 · CCl₄' },
+        dca: { kin: 'DCA动力学.csv', thermo: 'DCA热力学.csv', badge: 'DCA', cat: '有机氯化物 · DCA' },
+        as: { kin: 'As动力学.csv', thermo: 'As热力学.csv', badge: 'As', cat: '砷 · As' }
     };
 
     const PARAM_ROWS = {
@@ -709,7 +711,46 @@
         },
         dca: {
             name: 'C<sub>2</sub>H<sub>4</sub>Cl<sub>2</sub>（DCA）', mw: '98.959', cas: '107-06-2', mp: '−35.7&nbsp;°C (101.3&nbsp;kPa)', bp: '83.5&nbsp;°C (101.3&nbsp;kPa)', rho: '1.256&nbsp;g/cm³ (25&nbsp;°C)'
+        },
+        as: {
+            name: 'As（单质砷）', mw: '74.92', cas: '7440-38-2', mp: '817&nbsp;℃', bp: '615&nbsp;℃（升华）', rho: '5.73&nbsp;（灰砷）'
         }
+    };
+
+    /** 砷动力学 CSV：中文表头映射到逻辑字段（与英文表头同源） */
+    const KIN_AS = {
+        desc: '反应描述',
+        eq: null,
+        step: '脱氯步骤',
+        rtype: '反应类型',
+        reactant: '反应物',
+        product: '产物',
+        rate: '速率常数',
+        rateU: '速率常数_单位',
+        ks: '表面反应速率常数',
+        ksu: '表面反应速率常数_单位',
+        ksp: '溶度积',
+        kspu: '溶度积_单位',
+        order: '反应级数',
+        half: '半衰期',
+        halfU: '半衰期_单位',
+        ae: '活化能',
+        aeU: '活化能_单位',
+        temp: '温度',
+        tempU: '温度_单位',
+        pH: 'pH',
+        ref: '参考文献',
+        journal: null,
+        mineral: '固相矿物类型',
+        msa: '矿物比表面积',
+        msau: '矿物比表面积_单位',
+        exp: '实验体系',
+        notes: '其他条件',
+        oxygen: '氧化还原电位',
+        EhU: '氧化还原电位_单位',
+        pHnote: null,
+        ic: '初始浓度',
+        icu: '初始浓度_单位'
     };
 
     const KIN = {
@@ -756,6 +797,15 @@
         note: '备注'
     };
 
+    /** 动力学 CSV 列名（英文 header 或砷中文 header）→ 取值 */
+    function rk(row, logical) {
+        if (!row || !logical) return '';
+        const colname = currentPollutant === 'as' ? KIN_AS[logical] : KIN[logical];
+        if (colname === null || colname === undefined) return '';
+        const v = row[colname];
+        return v == null ? '' : String(v).trim();
+    }
+
     let currentPollutant = 'ccl4';
     let dataMode = 'kin';
     let masterDataKin = [];
@@ -784,9 +834,8 @@
     function updatePollutantLabels() {
         const c = currentCsvPaths();
         document.getElementById('demoBadge').textContent = '演示 · ' + c.badge + ' · 本地 CSV';
-        const d = currentPollutant === 'ccl4' ? 'CCl₄' : 'DCA';
-        document.getElementById('sidebarKinTag').textContent = '有机氯化物 · ' + d + ' · 动力学';
-        document.getElementById('sidebarThermoTag').textContent = '有机氯化物 · ' + d + ' · 热力学';
+        document.getElementById('sidebarKinTag').textContent = c.cat + ' · 动力学';
+        document.getElementById('sidebarThermoTag').textContent = c.cat + ' · 热力学';
     }
 
     async function setPollutant(key) {
@@ -794,6 +843,7 @@
         currentPollutant = key;
         document.getElementById('polCcl4').classList.toggle('active', key === 'ccl4');
         document.getElementById('polDca').classList.toggle('active', key === 'dca');
+        document.getElementById('polAs').classList.toggle('active', key === 'as');
         updateParamTable();
         updatePollutantLabels();
         closeDetails();
@@ -922,7 +972,7 @@
             if (row.some(cell => cell.length > 0)) rows.push(row);
         }
         if (rows.length < 2) return [];
-        const headers = rows[0].map(h => h.trim());
+        const headers = rows[0].map(h => h.replace(/^\uFEFF/, '').trim());
         const result = [];
         for (let r = 1; r < rows.length; r++) {
             const cells = rows[r];
@@ -956,17 +1006,29 @@
     }
 
     function paramDisplayKin(row) {
-        const k = row[KIN.rate];
-        const ku = row[KIN.rateU];
+        const k = rk(row, 'rate');
+        const ku = rk(row, 'rateU');
+        const ks = rk(row, 'ks');
+        const ksu = rk(row, 'ksu');
+        const ksp = rk(row, 'ksp');
+        const kspu = rk(row, 'kspu');
         if (!isNaVal(k)) {
             const u = !isNaVal(ku) ? ku : '';
             return { type: '速率常数 k', value: `${k}${u ? ' ' + u : ''}`.trim() };
+        }
+        if (!isNaVal(ks)) {
+            const u = !isNaVal(ksu) ? ksu : '';
+            return { type: '表面反应速率常数', value: `${ks}${u ? ' ' + u : ''}`.trim() };
+        }
+        if (!isNaVal(ksp)) {
+            const u = !isNaVal(kspu) ? kspu : '';
+            return { type: '溶度积 Ksp', value: `${ksp}${u ? ' ' + u : ''}`.trim() };
         }
         return { type: '—', value: '—' };
     }
 
     function refTextKin(row) {
-        const d = (row[KIN.ref] || '').trim();
+        const d = rk(row, 'ref');
         if (!d) return '';
         return d.length > 120 ? d.slice(0, 120) + '…' : d;
     }
@@ -1090,36 +1152,40 @@
         const onlyK = document.getElementById('onlySurfaceK').checked;
 
         filteredData = masterDataKin.filter(item => {
-            if (rtVals.length && !rtVals.includes(item[KIN.rtype])) return false;
+            if (rtVals.length && !rtVals.includes(rk(item, 'rtype'))) return false;
             if (stepVals.length) {
-                const b = stepBucket(item[KIN.step]);
+                const b = stepBucket(rk(item, 'step'));
                 const ok = stepVals.some(sel => {
                     if (sel === '其他') return b === '其他' || b === 'NA';
                     return sel === b;
                 });
                 if (!ok) return false;
             }
-            const ph = firstNumber(item[KIN.pH]);
+            const ph = firstNumber(rk(item, 'pH'));
             if (ph != null && (ph < phMin || ph > phMax)) return false;
-            const t = firstNumber(item[KIN.temp]);
+            const t = firstNumber(rk(item, 'temp'));
             if (t != null && (t < tempMin || t > tempMax)) return false;
             if (bgText) {
                 const blob = [
-                    item[KIN.mineral], item[KIN.exp], item[KIN.notes]
+                    rk(item, 'mineral'), rk(item, 'exp'), rk(item, 'notes')
                 ].filter(Boolean).join(' ').toLowerCase();
                 if (!blob.includes(bgText)) return false;
             }
             if (redoxText) {
-                const ox = (item[KIN.oxygen] || '').toLowerCase();
+                let oxRaw = rk(item, 'oxygen');
+                if (currentPollutant === 'as') {
+                    oxRaw += ' ' + rk(item, 'EhU');
+                }
+                const ox = oxRaw.toLowerCase();
                 if (!ox.includes(redoxText)) return false;
             }
             if (sourceText) {
-                const desc = (item[KIN.desc] || '').toLowerCase();
-                const ref = (item[KIN.ref] || '').toLowerCase();
-                const jou = (item[KIN.journal] || '').toLowerCase();
+                const desc = rk(item, 'desc').toLowerCase();
+                const ref = rk(item, 'ref').toLowerCase();
+                const jou = rk(item, 'journal').toLowerCase();
                 if (!desc.includes(sourceText) && !ref.includes(sourceText) && !jou.includes(sourceText)) return false;
             }
-            if (onlyK && isNaVal(item[KIN.rate])) return false;
+            if (onlyK && isNaVal(rk(item, 'rate')) && isNaVal(rk(item, 'ks'))) return false;
             return true;
         });
     }
@@ -1182,12 +1248,12 @@
             const tr = document.createElement('tr');
             tr.onclick = () => openDetailsKin(item);
             const p = paramDisplayKin(item);
-            const phDisp = item[KIN.pH] && !isNaVal(item[KIN.pH]) ? item[KIN.pH] : '—';
-            const tRaw = item[KIN.temp];
-            const tDisp = tRaw && !isNaVal(tRaw) ? `${tRaw} ${item[KIN.tempU] || ''}`.trim() : '—';
+            const phDisp = rk(item, 'pH') && !isNaVal(rk(item, 'pH')) ? rk(item, 'pH') : '—';
+            const tRaw = rk(item, 'temp');
+            const tDisp = tRaw && !isNaVal(tRaw) ? `${tRaw} ${rk(item, 'tempU') || ''}`.trim() : '—';
             tr.innerHTML = `
-                <td>${escapeHtml(item[KIN.reactant] || '—')}</td>
-                <td><div class="cell-truncate">${escapeHtml(item[KIN.desc] || '—')}</div></td>
+                <td>${escapeHtml(rk(item, 'reactant') || '—')}</td>
+                <td><div class="cell-truncate">${escapeHtml(rk(item, 'desc') || '—')}</div></td>
                 <td>${escapeHtml(p.type)}</td>
                 <td>${escapeHtml(p.value)}</td>
                 <td>${escapeHtml(phDisp)}</td>
@@ -1250,29 +1316,34 @@
 
     function openDetailsKin(item) {
         const p = paramDisplayKin(item);
+        const eqBox = rk(item, 'eq') || `${rk(item, 'reactant') || '?'} → ${rk(item, 'product') || '—'}`;
+        const oxyLbl = currentPollutant === 'as' ? 'Eh（氧化还原）' : '氧气条件';
+        const oxyVal = currentPollutant === 'as'
+            ? `${rk(item, 'oxygen') || '—'} ${rk(item, 'EhU')}`.trim()
+            : (rk(item, 'oxygen') || '—');
         const html = `
-            <div class="meta-row"><span class="meta-label">反应物</span><span class="meta-value">${escapeHtml(item[KIN.reactant] || '—')}</span></div>
-            <div class="meta-row"><span class="meta-label">反应类型</span><span class="meta-value">${escapeHtml(item[KIN.rtype] || '—')}</span></div>
-            <div class="meta-row"><span class="meta-label">反应步骤</span><span class="meta-value">${escapeHtml(item[KIN.step] || '—')}</span></div>
-            <div class="meta-row"><span class="meta-label">反应级数</span><span class="meta-value">${escapeHtml(item[KIN.order] || '—')}</span></div>
+            <div class="meta-row"><span class="meta-label">反应物</span><span class="meta-value">${escapeHtml(rk(item, 'reactant') || '—')}</span></div>
+            <div class="meta-row"><span class="meta-label">反应类型</span><span class="meta-value">${escapeHtml(rk(item, 'rtype') || '—')}</span></div>
+            <div class="meta-row"><span class="meta-label">反应步骤</span><span class="meta-value">${escapeHtml(rk(item, 'step') || '—')}</span></div>
+            <div class="meta-row"><span class="meta-label">反应级数</span><span class="meta-value">${escapeHtml(rk(item, 'order') || '—')}</span></div>
             <div class="meta-row"><span class="meta-label">参数</span><span class="meta-value">${escapeHtml(p.type)}：${escapeHtml(p.value)}</span></div>
-            <div class="meta-row"><span class="meta-label">pH / T</span><span class="meta-value">${escapeHtml(item[KIN.pH] || '—')} · ${escapeHtml(item[KIN.temp] || '—')} ${escapeHtml(item[KIN.tempU] || '')}</span></div>
-            <div class="meta-row"><span class="meta-label">pH 说明</span><span class="meta-value">${escapeHtml(item[KIN.pHnote] || '—')}</span></div>
-            <div class="meta-row"><span class="meta-label">氧气条件</span><span class="meta-value">${escapeHtml(item[KIN.oxygen] || '—')}</span></div>
-            <div class="meta-row"><span class="meta-label">矿物</span><span class="meta-value">${escapeHtml(item[KIN.mineral] || '—')} ${escapeHtml(item[KIN.msa] || '')} ${escapeHtml(item[KIN.msau] || '')}</span></div>
-            <div class="meta-row"><span class="meta-label">实验类型</span><span class="meta-value">${escapeHtml(item[KIN.exp] || '—')}</span></div>
-            <div class="meta-row"><span class="meta-label">初始浓度</span><span class="meta-value">${escapeHtml(item[KIN.ic] || '—')} ${escapeHtml(item[KIN.icu] || '')}</span></div>
-            <div class="meta-row"><span class="meta-label">半衰期</span><span class="meta-value">${escapeHtml(item[KIN.half] || '—')} ${escapeHtml(item[KIN.halfU] || '')}</span></div>
-            <div class="meta-row"><span class="meta-label">活化能</span><span class="meta-value">${escapeHtml(item[KIN.ae] || '—')} ${escapeHtml(item[KIN.aeU] || '')}</span></div>
-            <div class="meta-row"><span class="meta-label">期刊</span><span class="meta-value">${escapeHtml(item[KIN.journal] || '—')}</span></div>
-            <p style="margin:16px 0 6px;font-weight:700;color:var(--text-secondary);font-size:0.8rem;">反应方程式</p>
-            <div class="code-box">${escapeHtml(item[KIN.eq] || '—')}</div>
+            <div class="meta-row"><span class="meta-label">pH / T</span><span class="meta-value">${escapeHtml(rk(item, 'pH') || '—')} · ${escapeHtml(rk(item, 'temp') || '—')} ${escapeHtml(rk(item, 'tempU') || '')}</span></div>
+            <div class="meta-row"><span class="meta-label">pH 说明</span><span class="meta-value">${escapeHtml(rk(item, 'pHnote') || '—')}</span></div>
+            <div class="meta-row"><span class="meta-label">${oxyLbl}</span><span class="meta-value">${escapeHtml(oxyVal)}</span></div>
+            <div class="meta-row"><span class="meta-label">矿物</span><span class="meta-value">${escapeHtml(rk(item, 'mineral') || '—')} ${escapeHtml(rk(item, 'msa') || '')} ${escapeHtml(rk(item, 'msau') || '')}</span></div>
+            <div class="meta-row"><span class="meta-label">实验类型</span><span class="meta-value">${escapeHtml(rk(item, 'exp') || '—')}</span></div>
+            <div class="meta-row"><span class="meta-label">初始浓度</span><span class="meta-value">${escapeHtml(rk(item, 'ic') || '—')} ${escapeHtml(rk(item, 'icu') || '')}</span></div>
+            <div class="meta-row"><span class="meta-label">半衰期</span><span class="meta-value">${escapeHtml(rk(item, 'half') || '—')} ${escapeHtml(rk(item, 'halfU') || '')}</span></div>
+            <div class="meta-row"><span class="meta-label">活化能</span><span class="meta-value">${escapeHtml(rk(item, 'ae') || '—')} ${escapeHtml(rk(item, 'aeU') || '')}</span></div>
+            <div class="meta-row"><span class="meta-label">期刊</span><span class="meta-value">${escapeHtml(rk(item, 'journal') || '—')}</span></div>
+            <p style="margin:16px 0 6px;font-weight:700;color:var(--text-secondary);font-size:0.8rem;">反应方程式（或产物示意）</p>
+            <div class="code-box">${escapeHtml(eqBox)}</div>
             <p style="margin:16px 0 6px;font-weight:700;color:var(--text-secondary);font-size:0.8rem;">参考文献</p>
-            <div class="code-box">${escapeHtml((item[KIN.ref] || '').trim() || '—')}</div>
+            <div class="code-box">${escapeHtml((rk(item, 'ref') || '').trim() || '—')}</div>
             <p style="margin:16px 0 6px;font-weight:700;color:var(--text-secondary);font-size:0.8rem;">实验描述</p>
-            <div class="code-box">${escapeHtml(item[KIN.desc] || '—')}</div>
+            <div class="code-box">${escapeHtml(rk(item, 'desc') || '—')}</div>
             <p style="margin:16px 0 6px;font-weight:700;color:var(--text-secondary);font-size:0.8rem;">备注</p>
-            <div class="code-box">${escapeHtml(item[KIN.notes] || '—')}</div>
+            <div class="code-box">${escapeHtml(rk(item, 'notes') || '—')}</div>
         `;
         document.getElementById('detailContent').innerHTML = html;
         document.getElementById('detailsDrawer').classList.add('open');

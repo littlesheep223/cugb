@@ -1,0 +1,4 @@
+污染物,Temperature (C),Pressure (MPa),Density (kg/m3),Enthalpy (kJ/mol),Entropy (J/mol*K),Cv (J/mol*K),Cp (J/mol*K),Solubility（mol /kg*atm）,Viscosity (uPa*s),Phase,数据来源
+As-,,,,211.5 ± 2.5,,,,,,gas,NIST
+As- + H+ = HAs,,,,1508.1 ± 2.9,,,,,,gas,NIST
+As,,,,382. ± 4.6,,,,,,gas,NIST
